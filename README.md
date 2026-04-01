@@ -1,7 +1,7 @@
 # ADPIO EDGE - IOT, FLOW-BASED PROGRAMMING AND INTEGRATION PLATFORM
 Modern IOT and fully WEB-based platform. 
 
-## [WEBSITE ADPIO EDGE](http://adpioedge.com)
+## [WEBSITE: ADPIO EDGE](http://adpioedge.com)
 
 
 Build around 3 main fundamentals: 
@@ -33,7 +33,7 @@ Dependencies for Svelte (required only for dev):
 ```
 
 ## Upcoming Milestones
-1. BACnet (BIP) Browser And BACnet Integration
+1. BIP driver, BACnet Browser And BACnet Integration
 2. More Graphical Widgets
 3. Modbus Integration
 4. Windows Support (Meh, eventually)
