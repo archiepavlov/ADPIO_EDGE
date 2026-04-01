@@ -1,0 +1,22 @@
+{
+    "python_exe": "python3",
+
+    "terminal": true,
+    
+    "uvicorn": { 
+        "host":    "0.0.0.0", 
+        "port":    8000,
+        "workers": 2
+    },
+
+    "loraWAN_server": {
+        "net_autostart": true,
+        "port"         : 9002,
+        "alloc_size"   : 100,
+        "debug"        : false,
+
+        "listen"       : 1,
+        "settimeout"   : 8
+    }
+
+}

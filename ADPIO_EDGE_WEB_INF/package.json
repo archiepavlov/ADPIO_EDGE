@@ -1,0 +1,27 @@
+{
+    "name": "adpio-edge-web-inf",
+    "private": true,
+    "debug": false,
+    "version": "0.6f",
+    "type": "module",
+    "scripts": {
+        "dev": "vite build --watch",
+        "dev1": "vite --host --port 8010",
+        "build": "vite build",
+        "preview": "vite preview",
+        "check": "svelte-check --tsconfig .\/tsconfig.app.json && tsc -p tsconfig.node.json"
+    },
+    "devDependencies": {
+        "@sveltejs\/vite-plugin-svelte": "^7.0.0",
+        "@tsconfig\/svelte": "^5.0.8",
+        "@types\/node": "^24.12.0",
+        "svelte": "^5.53.7",
+        "svelte-check": "^4.4.5",
+        "typescript": "~5.9.3",
+        "vite": "^8.0.0"
+    },
+    "dependencies": {
+        "carbon-icons-svelte": "^13.9.0",
+        "js-cookie": "^3.0.5"
+    }
+}
