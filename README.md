@@ -35,8 +35,10 @@ Dependencies for Svelte (required only for dev):
 ## Upcoming Milestones
 1. BIP driver, BACnet Browser And BACnet Integration
 2. More Graphical Widgets
-3. Modbus Integration
-4. Windows Support (Meh, eventually)
+3. Raspberry PI IO
+4. Modbus Integration
+5. MQTT Server
+6. Windows Support (Meh, eventually)
 
 
 ## Quick Start
@@ -47,7 +49,7 @@ Instructions on getting started:
 4. Navigate to Logic Palette and click Rebuild Database
    
 ## Pair Milesight LoRaWan Gateway (ex UG65) with LoRaWAN driver
-[Refernce Documentation](https://support.milesight-iot.com/support/solutions/articles/73000514208-how-to-connect-milesight-lorawan-gateway-to-http-s-server-)
+[Reference Documentation](https://support.milesight-iot.com/support/solutions/articles/73000514208-how-to-connect-milesight-lorawan-gateway-to-http-s-server-)
 1. Login to UG65 and Navigate to Network Server -> Applications
 2. Create application if needed
 3. Edit application -> add HTTP transmission
