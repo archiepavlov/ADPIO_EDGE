@@ -14,6 +14,7 @@
     let drag_event :any     = {event: false, collapse: false, pos_x: 200, pos_y: 200, layer_x: 0, layer_y: 0}
 
     export function open(posX: number, posY: number){
+        if (visible) close(undefined)
         if (!visible){
             drag_event.pos_x = posX
             drag_event.pos_y = posY
@@ -53,13 +54,13 @@
 
         <div class="modal-header">
             <div 
-                onpointerdown  =  "{(e) => { 
+                onpointerdown  =  "{(e:any) => {
                     drag_event.event = true 
                     drag_event.layer_x = e.layerX
                     drag_event.layer_y = e.layerY
                 }}" 
 
-                onpointerup    =  "{() =>  { drag_event.event = false }}"
+                onpointerup    =  "{(e: any) =>  { drag_event.event = false }}"
             >
                 {title}
             </div>
@@ -83,8 +84,8 @@
     {#if drag_event.event }
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="modal-drag-area"
-            onpointermove  =  "{(e) => { move_event(e) }}"
-            onpointerup    =  "{() =>  { drag_event.event = false }}"
+            onpointermove  =  "{(e:any) => { move_event(e) }}"
+            onpointerup    =  "{(e:any) => { drag_event.event = false }}"
         ></div>
     {/if}    
 {/if}
@@ -127,6 +128,7 @@
         width: 100%;
         /*padding: 0 5px;*/
         display: inline-flex;
+        text-align: left;
 
         border-bottom: 1px solid orange;
 

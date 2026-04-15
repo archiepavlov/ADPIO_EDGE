@@ -3,24 +3,38 @@ import ujson
 
 #Tools
 from drivers.loraWAN_conn_sever import get_loraWAN_db
+from drivers.bacnet_server      import get_devices, set_devices, get_tasks, set_tasks, add_new_tasks
 
 from content.users import check_permissions
 
 
-async def update(content):
+async def lora_update(content):
     return get_loraWAN_db()
     
 
-async def find_device(content):
+async def lora_find_device(content):
     for dev in get_loraWAN_db():
         if dev['devEUI'] == content['devEUI']:
             return dev
         
     return {}
 
+
+async def bacnet_update(content):
+    return get_devices()
+
+
+async def bacnet_read_properties(content):
+    add_new_tasks( content )
+    return  { 'result': 'ok', } 
+
+
 COMMANDS_DICT = {
-    'lora_tools_update'       : update,       'perm_lora_tools_update'        : 'developer, ',
-    'lora_tools_find_device'  : find_device,  'perm_lora_tools_find_device'   : 'developer, ',
+    'lora_tools_update'            : lora_update,            'perm_lora_tools_update'            : 'developer, ',
+    'lora_tools_find_device'       : lora_find_device,       'perm_lora_tools_find_device'       : 'developer, ',
+
+    'bacnet_tools_update'          : bacnet_update,          'perm_bacnet_tools_update'          : 'developer, ',
+    'bacnet_tools_read_properties' : bacnet_read_properties, 'perm_bacnet_tools_read_properties' : 'developer, ',
 }
 
 

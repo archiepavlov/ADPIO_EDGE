@@ -10,7 +10,9 @@
   import Logger       from './content/system/Logger.svelte'
   import Users        from './content/system/Users.svelte'
   import PaletteLogic from './content/system/PaletteLogic.svelte'
+  
   import LoraTools    from './content/system/LoraTools.svelte'
+  import BACnetTools  from './content/system/BACnetTools.svelte'
 
   import IDE_mng      from './content/app_ide/IDE_mng.svelte'
   import IDE_main     from './content/app_ide/IDE_main.svelte'
@@ -36,6 +38,7 @@
     get_cookie_value,
     initialize_user
   } from "./stores.js"
+    
 
     
   $: user      = $user_params
@@ -78,6 +81,7 @@
   
 
 </script>
+
   <svelte:window bind:innerWidth bind:outerWidth bind:innerHeight bind:outerHeight
     onresize="{() => {
       on_browser_resize(outerWidth, innerWidth, outerHeight, innerHeight)
@@ -98,7 +102,6 @@
         {#key user.active_content}
           <APP_view uri="{user.active_content}" />
         {/key}
-        <!--/view/{app.group}/{app.name}-->
       {:else if user.active_content.includes("/app_ide")}
         {#if      user.active_content.includes("/mng")}    <IDE_mng />
         {:else if user.active_content.includes("/editor")} <IDE_main />
@@ -106,8 +109,9 @@
       {:else if user.active_content.includes("/login")}
         <Login />
       {:else if user.active_content.includes("/tools")}  
-        {#if      user.active_content.includes("/trendview")}   <Trends_view />   
-        {:else if user.active_content.includes("/loranetwork")} <LoraTools />   
+        {#if      user.active_content.includes("/trendview")}     <Trends_view />   
+        {:else if user.active_content.includes("/lorabrowser")}   <LoraTools   />   
+        {:else if user.active_content.includes("/bacnetbrowser")} <BACnetTools /> 
         {/if}
       {:else if   user.active_content.includes("/development")}
         {#if      user.active_content.includes("/palettelogic")}  <PaletteLogic />

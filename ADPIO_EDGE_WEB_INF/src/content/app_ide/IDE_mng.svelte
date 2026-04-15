@@ -221,15 +221,13 @@
 
         data.data.forEach((el: any) => {
             el.panel = []
-
+            
             if (el.status)    el.panel.push({ icon: Play,     color: "green", text: 'APP Running'})
             else              el.panel.push({ icon: Stop,     color: "off"  , text: 'APP Stopped'})    
                 
-            
             if (el.autostart) el.panel.push({ icon: Restart,  color: "green", text: 'Autostart Enabled'})
-            else              el.panel.push({ icon: Restart,  color: "off"  , text: 'Autostart Disabled'})   
-             
-        });
+            else              el.panel.push({ icon: Restart,  color: "off"  , text: 'Autostart Disabled'})      
+        })
 
         const ctls = update_buttons()
         buttons        = ctls[0]

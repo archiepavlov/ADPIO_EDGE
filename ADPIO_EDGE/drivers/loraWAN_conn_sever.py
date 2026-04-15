@@ -7,7 +7,7 @@ from assets.dataconversion      import set_mem_value
 
 #Connects loraWAN via http. loraWAN - client - this one is server
 from content.logger    import print_log_lora
-from system.shared_mem import get_server_mem
+from system.shared_mem import get_server_mem, LORA_MEM_ADDR
 
 
 
@@ -26,9 +26,12 @@ class loraWAN_server:
         #self.device_db   = []
 
 
-    async def init_service(self, port, debug, listen, settimeout):
-        self.port   = port
-        self.debug  = debug
+    async def init_service(self, settings_adapter):
+        self.port       = settings_adapter['port']
+        self.debug      = settings_adapter['debug']
+
+        self.listen     = settings_adapter['listen']
+        self.settimeout = settings_adapter['settimeout']
 
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
@@ -60,7 +63,6 @@ class loraWAN_server:
             try: 
                 c_s, addr = self.sock.accept()
 
-
                 req_data = "" #get loraWAN data
                 while True:
                     data = c_s.recv(4096)
@@ -81,11 +83,11 @@ class loraWAN_server:
                 c_s.close()        
             except socket.timeout:  
                 pass
-            except Exception as ex:  
-                print(f"Error1, LoRaWAN! Err {ex}, data len {len(data)}, Req: { req_data }") 
+            except Exception as ex: 
+                print(f"Err1, LoRa: {ex}, data len {len(data)}, Req: { req_data }") 
                 c_s.close()
             except OSError as ex:
-                print(f"Error2, LoRaWAN! Err {ex}, data len {len(data)}, Req: { req_data }") 
+                print(f"Err2, LoRa: {ex}, data len {len(data)}, Req: { req_data }") 
                 c_s.close()
                   
 
@@ -98,7 +100,7 @@ class loraWAN_server:
         asyncio.run( print_log_lora(f"LoRaWAN HTTP API: Driver Terminated") )
 
 
-    async def terminate_service(self):
+    def terminate_service(self):
         self.status = False
         #self.device_db = [] #Memory freeed at shared memory py
  
@@ -215,11 +217,7 @@ def find_field( device, field ):
 #Get DB from Memory
 def set_loraWAN_db(jsn):
     SERVER_MEM =  get_server_mem()
-    SERVER_MEM[3] = ujson.dumps( jsn ) #ujson.dumps( jsn )
-
+    SERVER_MEM[LORA_MEM_ADDR] = ujson.dumps( jsn ) 
 
 def get_loraWAN_db():
-    return ujson.loads( get_server_mem()[3] )
-
-
-
+    return ujson.loads( get_server_mem()[LORA_MEM_ADDR] )

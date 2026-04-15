@@ -139,8 +139,9 @@ def get_edit_tree(tree: list):
     ]})
     
     tree.append({'id': 'tools', 'name': 'TOOLS', 'visible': True, 'submenu': [
-        {'id': '/tools/trendview',     'name': 'TREND VIEW',    'type': 'menu', 'visible': True, 'draggable': False},
-        {'id': '/tools/loranetwork',   'name': 'LORA BROWSER',  'type': 'menu', 'visible': True, 'draggable': False},
+        {'id': '/tools/trendview',      'name': 'TREND VIEW',     'type': 'menu', 'visible': True, 'draggable': False},
+        {'id': '/tools/bacnetbrowser',  'name': 'BACNET BROWSER', 'type': 'menu', 'visible': True, 'draggable': False},
+        {'id': '/tools/lorabrowser',    'name': 'LORA BROWSER',   'type': 'menu', 'visible': True, 'draggable': False},
     ]})    
     
     tree.append({'id': 'tools', 'name': 'DEVELOPMENT', 'visible': True, 'submenu': [

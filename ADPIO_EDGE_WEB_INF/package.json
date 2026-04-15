@@ -1,8 +1,8 @@
 {
     "name": "adpio-edge-web-inf",
     "private": true,
-    "debug": false,
-    "version": "0.6f",
+    "debug": true,
+    "version": "0.9",
     "type": "module",
     "scripts": {
         "dev": "vite build --watch",

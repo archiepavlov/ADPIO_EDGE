@@ -1,7 +1,7 @@
 {
     "python_exe": "python3",
 
-    "terminal": true,
+    "terminal": false,
     
     "uvicorn": { 
         "host":    "0.0.0.0", 
@@ -9,7 +9,7 @@
         "workers": 2
     },
 
-    "loraWAN_server": {
+    "lorawan_server": {
         "net_autostart": true,
         "port"         : 9002,
         "alloc_size"   : 100,
@@ -17,6 +17,58 @@
 
         "listen"       : 1,
         "settimeout"   : 8
+    },
+
+    "bacnet_server": {
+        "net_autostart"  : false,
+        "whois_autostart": true,
+        "alloc_size"     : 250,
+        "task_mng_sleep" : 0.1,
+
+        "bip_ip"         : "192.168.1.162",
+        "bip_mask"       : "255.255.255.0",
+        "bip_port"       : 47808,
+        
+        "debug"          : false,
+
+        "server": [[
+            {
+                "apdu-segment-timeout"          : 1000,
+                "apdu-timeout"                  : 3000,
+                "application-software-version"  : "1.0",
+                "database-revision"             : 1,
+                "firmware-revision"             : "N\/A",
+                "max-apdu-length-accepted"      : 1024,
+                "model-name"                    : "N\/A",
+                "number-of-apdu-retries"        : 3,
+                "object-identifier"             : "device,99999",
+                "object-name"                   : "ADPIO EDGE",
+                "object-type"                   : "device",
+                "protocol-revision"             : 22,
+                "protocol-version"              : 1,
+                "segmentation-supported"        : "segmented-both",
+                "system-status"                 : "operational",
+                "vendor-identifier"             : 999,
+                "vendor-name"                   : "BACpypes"
+            }, {
+                "bacnet-ip-mode"                : "normal",
+                "bacnet-ip-udp-port"            : -1,
+                "changes-pending"               : false,
+                "ip-address"                    : "XXX.XXX.XXX.XXX",
+                "ip-subnet-mask"                : "XXX.XXX.XXX.XXX",
+                "link-speed"                    : 0.0,
+                "mac-address"                   : "XXX.XXX.XXX.XXX:XXXXX",
+                "network-number"                : 100,
+                "network-number-quality"        : "configured",
+                "network-type"                  : "ipv4",
+                "object-identifier"             : "network-port,1",
+                "object-name"                   : "NetworkPort-1",
+                "object-type"                   : "network-port",
+                "out-of-service"                : false,
+                "protocol-level"                : "bacnet-application",
+                "reliability"                   : "no-fault-detected"
+            }
+        ]]
     }
 
 }

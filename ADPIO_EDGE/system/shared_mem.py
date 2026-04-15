@@ -1,8 +1,16 @@
 from multiprocessing.shared_memory import ShareableList
 
 server_mem_name = 'server_mem'
+STATUS_MEM_ADDR     = 0
+WORKERS_MEM_ADDR    = 1
+DB_REBUILD_MEM_ADDR = 2
+TERMINAL_MEM_ADDR   = 3
+LORA_MEM_ADDR       = 4
 
-def init_server_mem(mile_alloc = 100, terminal = False):
+BCNT_DB_MEM_ADDR    = 5
+BCNT_CMD_MEM_ADDR   = 6
+
+def init_server_mem(lora_alloc = 100, bacnet_alloc = 250, terminal = False, auto_rebuild = False):
     try:
         SERVER_MEM = ShareableList(name=server_mem_name) 
         SERVER_MEM.shm.close()
@@ -14,11 +22,16 @@ def init_server_mem(mile_alloc = 100, terminal = False):
     SERVER_MEM = ShareableList( [
         0,              # Server Status 0 - Not Init, 1 - Run Signal, 2 - Shutdown Signal
         0,              # Workers Count
-        terminal,       #Ouput into Terminal
-        " " * 1024 * mile_alloc, # loraWAN Serialized Size may be too small (in 1024 x kb )
+        auto_rebuild,   # First DB Init
+        terminal,       # Ouput into Terminal or into GUI
+        " " * 1024 * lora_alloc,   # LoRaWAN Serialized Size may be too small (in 1024 x kb = bytes )
+        " " * 1024 * bacnet_alloc, # BACnet DB  Serialized Size may be too small  (in 1024 x kb = bytes )
+        " " * 1024 * bacnet_alloc, # BACnet CMD Serialized Size may be too small  (in 1024 x kb = bytes )
     ], name=server_mem_name)
 
-    SERVER_MEM[3] = "[]"
+    SERVER_MEM[LORA_MEM_ADDR]       = "[]"
+    SERVER_MEM[BCNT_DB_MEM_ADDR]    = "[]"
+    SERVER_MEM[BCNT_CMD_MEM_ADDR]   = "[]"
 
     if __debug__:
         print("Shared Mem Initialized")
@@ -40,6 +53,9 @@ def get_server_mem():
         return [
             2,   # Server Status 0 - Not Init, 1 - Run Signal, 2 - Shutdown Signal
             -1,  # Workers Count
+            False,# First DB Init
             False,
-            "[]"
+            "[]",
+            "[]",
+            "[]",
         ]

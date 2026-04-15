@@ -112,12 +112,8 @@
                     else
                         dd.panel.push({ icon: DataQualityDefinition, color: "off"  , text: 'No binds'})                     
                 })
-
-            }      
-            
-        });
-
-
+            }     
+        })
     }
 
     async function show_data_modal(){
@@ -130,7 +126,7 @@
         
         await update()
         data.data = data.data
-        interval_update = setInterval(async () => { await update() }, 3000)
+        interval_update = setInterval(async () => { await update() }, 2000)
     })
 
     onDestroy(async () => {

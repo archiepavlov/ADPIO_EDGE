@@ -1,15 +1,20 @@
 import ujson
 import os
 import shutil
-from system.globals import ROOT_FOLDER, WORKSPACE, APPS_FOLDER, ASSET_FOLDER
+import asyncio 
+
+from system.globals       import ROOT_FOLDER, WORKSPACE, APPS_FOLDER, ASSET_FOLDER
+
 
 class settings_cfg:
     def __init__(self):
         self.uvicorn        = None
-        self.loraWAN_server = None
+        self.lorawan_server = None
+        self.bacnet_server  = None
 
-        self.python       = ''
-        self.terminal     = False
+        self.python         = ''
+        self.terminal       = False
+        self.auto_rebuild   = False
         
         self.create_work_folder()        
         
@@ -18,6 +23,8 @@ class settings_cfg:
         if (not os.path.isdir(WORKSPACE)):
             try: 
                 os.mkdir(WORKSPACE)
+                self.auto_rebuild = True
+
             except OSError as error:  
                 print(error)
                 
@@ -49,30 +56,11 @@ class settings_cfg:
             except OSError as error:  
                 print(error)      
         
-        
+        #If First Init - rebuild logic palette automatically
+        #if first_init:            
+        #    asyncio.run( rebuild_logic_db({}) )
+        #    print("Logic DB rebuilt successfully")
                                       
-
-        """if (not os.path.isdir(ASSET_FOLDER)):
-            try: 
-                os.mkdir(ASSET_FOLDER)
-            except OSError as error:  
-                print(error)
-
-        if (not os.path.isdir(BUILD_FOLDER)):
-            try: 
-                os.mkdir(BUILD_FOLDER)
-            except OSError as error:  
-                print(error)
-
-        if (not os.path.isfile(WORK_FOLDER + '/settings.json')):
-            try: 
-                if __debug__:
-                    shutil.copy2( ROOT_FOLDER + '/assets/settings_dev.json', WORK_FOLDER + '/settings.json')
-                else:
-                    shutil.copy2( ROOT_FOLDER + '/assets/settings.json', WORK_FOLDER + '/settings.json')
-            except OSError as error:  
-                print(error)           
-        """
         
     def read_settings(self):
         with open (f'{WORKSPACE}/settings.json' ) as f:
@@ -83,7 +71,10 @@ class settings_cfg:
             self.terminal       = cls['terminal']
             
             self.uvicorn        = cls['uvicorn']
-            self.loraWAN_server = cls['loraWAN_server']
+
+            self.lorawan_server = cls['lorawan_server']
+            self.bacnet_server  = cls['bacnet_server']
+            
 
     """
     def write_settings(self):

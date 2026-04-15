@@ -50,14 +50,6 @@ async def print_log_system(txt):
 
 
 async def print_log_error(txt):
-    """global last_records_error
-
-    if txt not in last_records_error:
-        last_records_error.insert(0, txt)
-        if len( last_records_error ) > __max_back_log:
-            last_records_error.pop(__max_back_log)
-    """
-
     txt_trim = txt
     if (len(txt) > 2018):
         txt_trim = txt[:2018] + '...'
@@ -70,24 +62,27 @@ async def print_log_error(txt):
 
 
 async def print_log_lora(txt):
-    """global last_records_info
-
-    if txt not in last_records_info:
-        last_records_info.insert(0, txt)
-        if len( last_records_info ) > __max_back_log:
-            last_records_info.pop(__max_back_log)
-            
-    """
-    
     txt_trim = txt
     if (len(txt) > 2018):
         txt_trim = txt[:2018] + '...'
 
     with db_session:
-        db.logger (type='loraWAN', text=txt_trim)
+        db.logger (type='LoRaWAN', text=txt_trim)
     
-    print( f'loraWAN: {txt}' )
-    return {'loraWAN' : txt}
+    print( f'LoRaWAN: {txt}' )
+    return {'LoRaWAN' : txt}
+
+
+async def print_log_bacnet(txt):    
+    txt_trim = txt
+    if (len(txt) > 2018):
+        txt_trim = txt[:2018] + '...'
+
+    with db_session:
+        db.logger (type='BACnet', text=txt_trim)
+    
+    print( f'BACnet: {txt}' )
+    return {'BACnet' : txt}
 
 
 async def print_app_event(txt):

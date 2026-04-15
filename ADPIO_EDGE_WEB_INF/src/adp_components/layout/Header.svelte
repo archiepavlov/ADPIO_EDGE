@@ -8,11 +8,10 @@
         Login
     } from "carbon-icons-svelte"
 
-    import SysTerminal  from "../components/Terminal.svelte"
-
     import {set_user_params, set_navigation, set_edit_mode, logout_user} from "../../stores.js"
 
-    import ConfModal from "../components/ConfModal.svelte"
+    import ConfModal    from "../components/ConfModal.svelte"
+    import SysTerminal  from "../components/Terminal.svelte"
 
     export let user   : any
     let terminal_modal: any

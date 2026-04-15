@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(f'{os.getcwd()}/ext_lib/') #External Libraries
+
 import uvicorn
 import asyncio
 from pydantic import BaseModel
@@ -5,13 +9,12 @@ from pony.orm import *
 
 
 #FAST API
-from fastapi                import FastAPI, Request
-from fastapi.responses      import HTMLResponse
-from fastapi.staticfiles    import StaticFiles
-from contextlib             import asynccontextmanager
+from fastapi                 import FastAPI, Request
+from fastapi.responses       import HTMLResponse
+from fastapi.staticfiles     import StaticFiles
+from contextlib              import asynccontextmanager
+from fastapi.middleware.gzip import GZipMiddleware
 
-#FAST API AUTH, We are using simplyfied
-from fastapi                import FastAPI
 
 #This more advanced, for future
 #from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -23,7 +26,7 @@ from system.globals         import ROOT_FOLDER, WORKSPACE, WEB_INF_index
 from system.settings_server import settings_cfg
 from database.db_main       import db
 from database.app_db        import apps_db_initialize, apps_db_termiante
-from system.shared_mem      import init_server_mem, clear_server_mem, get_server_mem
+from system.shared_mem      import init_server_mem, clear_server_mem, get_server_mem, STATUS_MEM_ADDR, WORKERS_MEM_ADDR, DB_REBUILD_MEM_ADDR, TERMINAL_MEM_ADDR
 from assets.terminal        import terminal_web
 
 
@@ -40,7 +43,7 @@ from content.logger import log_task_mng, print_log_system, print_app_event
 
 #Tools 
 from content.trends_tools  import trends_tools_mng
-from content.system_tools  import system_tools_mng
+from content.system_tools  import system_tools_mng, rebuild_logic_db
 from content.network_tools import network_tools_mng
 
 #APPS
@@ -48,6 +51,7 @@ from system.app_engine import stop_app, run_app
 
 #Drivers
 from drivers.loraWAN_conn_sever import loraWAN_server
+from drivers.bacnet_server      import bacnet_server
 
 
 #from multiprocessing import freeze_support
@@ -57,6 +61,7 @@ user_cache  = []
 worker      = -1
 
 loraWAN_serv = None
+bacnet_serv  = None
 
 
 class request_jsn(BaseModel): #for standart commands, update, delete record and etc
@@ -66,31 +71,38 @@ class request_jsn(BaseModel): #for standart commands, update, delete record and 
 
 
 async def on_server_startup_drivers(settings):
-    global loraWAN_server
-
-    #initialize drivers
-    loraWAN_server = loraWAN_server()
-
-    if settings.loraWAN_server['net_autostart']:
-        await loraWAN_server.init_service(
-            settings.loraWAN_server['port'], 
-            settings.loraWAN_server['debug'],
-
-            settings.loraWAN_server['listen'], 
-            settings.loraWAN_server['settimeout'],            
-        )
-
+    global loraWAN_serv, bacnet_serv
     server_mem = get_server_mem()
-    server_mem[0] = 1 #Server Status - On
+
+    #Check If Workspace properly initialized
+    if server_mem[DB_REBUILD_MEM_ADDR]:
+        print("\n\nFirst DB Initialization, Auto Rebuild Mode On\n\n")
+        await rebuild_logic_db({})
+        print("\n\nAuto Rebuild Complete!!!\n\n")
+
+    #Initialize drivers
+    if settings.lorawan_server['net_autostart']:
+        loraWAN_serv = loraWAN_server()
+        await loraWAN_serv.init_service( settings.lorawan_server )
+
+    if settings.bacnet_server['net_autostart']:
+        bacnet_serv = bacnet_server()
+        await bacnet_serv.init_service( settings.bacnet_server )
+
+    server_mem[STATUS_MEM_ADDR] = 1 #Server Status - On
 
 
 async def on_server_shutdown_drivers():
-    global loraWAN_server
+    global loraWAN_serv, bacnet_serv
 
-    await loraWAN_server.terminate_service()
+    if not loraWAN_serv == None:
+        loraWAN_serv.terminate_service()
+
+    if not bacnet_serv == None:
+        bacnet_serv.terminate_service()        
 
     server_mem = get_server_mem()
-    server_mem[0] = 2 #Server Status - Off
+    server_mem[STATUS_MEM_ADDR] = 2 #Server Status - Off
 
     
 @asynccontextmanager
@@ -101,14 +113,14 @@ async def startup_shutdown(app: FastAPI):
     #Init Databases
     db.init_db()
 
-    server_mem      = get_server_mem()
-    server_mem[1]  += 1 #Workers Count
-    worker          = server_mem[1]
+    server_mem                   = get_server_mem()
+    server_mem[WORKERS_MEM_ADDR] += 1 #Workers Count
+    worker                       = server_mem[WORKERS_MEM_ADDR]
 
-    if not server_mem[2]:
+    if not server_mem[TERMINAL_MEM_ADDR]:
         terminal = terminal_web('system', True) #Terminal For Workers
 
-    print(f'Server Status: {server_mem[0]}, Worker={server_mem[1]}')
+    print(f'Server Status: {server_mem[STATUS_MEM_ADDR]}, Worker={server_mem[WORKERS_MEM_ADDR]}')
 
     auth_no_users_fix() #if there is no user - create admin/admin
     user_cache = cached_auth()
@@ -140,23 +152,34 @@ async def startup_shutdown(app: FastAPI):
     if worker == 1:
         await print_log_system("ADPIO Edge Terminated...")
 
-    if not server_mem[2]:
+    if not server_mem[TERMINAL_MEM_ADDR]:
         terminal.terminate()
 
     db.close_db()
 
-    
+
 app = FastAPI( 
     lifespan=startup_shutdown, 
 
     title="ADPIO_EDGE",
     #version=""
     #debug=True 
+
+    #docs_url    = None, # Disable Swagger UI
+    #redoc_url   = None, # Disable ReDoc
+    #openapi_url = None  # Disable OpenAPI JSON schema        
 ) 
 
-app.mount( "/assets",    StaticFiles(directory = "./WEB-INF/assets"),    name = "assets") #Svelte Static Resources, ex: bundle, files, pictures    
-app.mount( "/favicon",   StaticFiles(directory = "./WEB-INF/favicon"),   name = "favicon") #Favicon   
-app.mount( "/resources", StaticFiles(directory = "./WEB-INF/resources"), name = "resources") #Favicon   
+
+app.add_middleware(
+    GZipMiddleware,
+    minimum_size  = 1024 * 8,
+    compresslevel = 6
+)
+
+app.mount( "/assets",    StaticFiles(directory = "./WEB-INF/assets"),    name = "assets")    #Svelte Static Resources, ex: bundle, files, pictures    
+app.mount( "/favicon",   StaticFiles(directory = "./WEB-INF/favicon"),   name = "favicon")   #Favicon   
+app.mount( "/resources", StaticFiles(directory = "./WEB-INF/resources"), name = "resources") #Resources   
 
 
 def check_auth(sessionid):
@@ -270,9 +293,7 @@ def main():
 
     if __debug__: 
         print("DEBUG is ON. Run with -O or -OO to turn off debug")
-        print("!!!!! THIS VERSION NOT FOR DISTRIBUTION !!!!!")
-        print("IF YOU SEE THIS MESSAGE IN BUILD, you had one job and you fucked it up.\n\n")
-        
+        print("!!!!! THIS VERSION NOT FOR DISTRIBUTION !!!!!")        
     
     print(f"Global ROOT Folder:      {ROOT_FOLDER}"    )
     print(f"Global WORKSPACE Folder: {WORKSPACE}\n"    )
@@ -292,7 +313,12 @@ def main():
 
 
     db.init_db()    
-    init_server_mem(settings.loraWAN_server['alloc_size'], settings.terminal)
+    init_server_mem(
+        terminal     = settings.terminal,
+        auto_rebuild = settings.auto_rebuild,
+        lora_alloc   = settings.lorawan_server['alloc_size'], 
+        bacnet_alloc = settings.bacnet_server ['alloc_size'],
+    )
 
     if not settings.terminal:
         print("Custom STDOUT/ERR Initialized... Look In Log Files ")
