@@ -5,6 +5,8 @@
         async_post,
     } from "../../stores"
 
+    import { OBJECT_PROPERTIES } from "../../../public/objects_properties"
+
     import DataTable        from "../../adp_components/components/DataTable.svelte"
     import Modal            from "../../adp_components/components/Modal.svelte"
     import ControlPanel     from "../../adp_components/components/ControlPanel.svelte"
@@ -12,6 +14,7 @@
     
     import {
         Edit,
+        FolderParent,
         ConnectionSignal,
         DataQualityDefinition, 
         Run,
@@ -38,15 +41,18 @@
     let datatable           : any = undefined
     let selected_device     : any = undefined
     let selected_object     : any = undefined
-    let view_objects_modal  : any = []
+    let selected_property   : any = undefined
+    
+    let view_objects_modal    : any = undefined
+    let view_properties_modal : any = undefined
     
     let interval_update: number
 
     let data: any = {
         header: "",
         colums: [
-            {name: "",                key: "panel",         row_style: "width: 120px;"}, 
-            {name: "ID",              key: "id",            row_style: "", }, 
+            {name: "",                key: "panel",         row_style: "width: 86px;"}, 
+            //{name: "ID",              key: "id",            row_style: "", }, 
             {name: "DEVICE ID",       key: "device_id",     row_style: "", },    
             {name: "NETWORK",         key: "net",           row_style: "", }, 
             {name: "NAME",            key: "name",          row_style: "", }, 
@@ -70,21 +76,30 @@
         data: [],
     }
 
+    let obj_data: any = {
+        header: "",
+        colums: [       
+            /*{name: "",              key: "panel",        row_style: "width: 52px;"},      */
+            {name: "PROPERTY",  key: "property",  row_style: "width: 240px;", }, 
+            {name: "VALUE",     key: "value",     row_style: "", }, 
+        ],       
+        data: [],
+    }    
 
     let buttons:any = []
+    let device_buttons:any = []
+    let object_buttons:any = []
 
     function update_buttons(){
-        let btn:any = [
-            /*{
-                text                : 'Refresh',
+        buttons = [
+            {
+                text                : 'View Device Objects',
                 color               : 'normal',
-                icon                : Run,
-                disabled            : false,
+                icon                : FolderParent,
+                disabled            : selected_device === undefined,
 
-                with_confirmation   : false,
-
-                onclick             : async (e: any) => { await update() }
-            },*/
+                onclick             : async (e: any) => { await show_objects_modal() }
+            },
 
             {
                 text                : 'Read Object List',
@@ -92,13 +107,40 @@
                 icon                : DataBackup,
                 disabled            : selected_device === undefined,
 
-                onclick             : async (e: any) => {
-                    await read_object_list(selected_device)
-                }
+                onclick             : async (e: any) => {  await read_object_list(selected_device) }
             }
         ]
 
-        return btn
+        device_buttons = [
+            {
+                text                : "View Object's Properties",
+                color               : 'normal',
+                icon                : FolderParent,
+                disabled            : selected_object === undefined,
+
+                onclick             : async (e: any) => { await show_properties_modal() }
+            },
+
+            {
+                text                : 'Read All Object Info',
+                color               : 'normal',
+                icon                : DataBackup,
+                disabled            : selected_device === undefined,
+
+                onclick             : async (e: any) => {  await read_object_short_info_all(selected_device) }
+            }
+        ]
+
+        object_buttons = [
+            {
+                text                : 'Read All Properties',
+                color               : 'normal',
+                icon                : DataBackup,
+                disabled            : false,
+
+                onclick             : async (e: any) => {  await read_object_properties(selected_device, selected_object, 'all') }
+            }
+        ]
     }
 
     async function read_object_list(device: any){
@@ -132,10 +174,20 @@
         await bacnet_command(request)        
     }
 
-    async function read_object_short_info(device: any, object: any){
-        let request:any = []
+    function form_read_request(device: any, object: any, properties: any){
+        let request: any = []
+        let scan_all: boolean = false
 
-        if (object.name === "")
+        //Do not forget check prop for segmentation if (device.segment_tx){
+        const object_map:string = OBJECT_PROPERTIES[object.object.split(',')[0]]        
+        if (properties === 'all') {
+            properties = object_map
+            scan_all   = true
+        }
+
+        properties.forEach((prop: any) => {
+            if ((!scan_all) && (!object_map.includes(prop))) return 
+            
             request.push({ 
                 'cmd': 'read_property_db', 
                 'params': { 
@@ -143,57 +195,47 @@
                     'net'       : device.net,  
                     'object_id' : object.object_id,               
                     'object'    : object.object,                 
-                    'property'  : 'objectName',
+                    'property'  : prop,
                 } 
             })
+        });
 
-        request.push({ 
-            'cmd': 'read_property_db', 
-            'params': { 
-                'id'        : device.id, 
-                'net'       : device.net, 
-                'object_id' : object.object_id,
-                'object'    : object.object,                 
-                'property'  : 'presentValue'
-            } 
-        })
+        return request
+    }
 
+    async function read_object_short_info(device: any, object: any){
+        let props  :any = []
+        
+        if (object.name === '') 
+            props = [ 'objectName', 'presentValue']
+        else 
+            props = [ 'presentValue']
+
+        let request:any = form_read_request(device, object, props)
         await bacnet_command(request)
     }
 
     async function read_object_short_info_all(device: any){
         let request:any = []
+        let props  :any = []
+        
 
         device.objects.forEach((object: any) => {
-            if (object.name === "")
-                request.push({ 
-                    'cmd': 'read_property_db', 
-                    'params': { 
-                        'id'        : device.id, 
-                        'net'       : device.net,  
-                        'object_id' : object.object_id,               
-                        'object'    : object.object,                 
-                        'property'  : 'objectName',
-                    } 
-                })
+            if (object.name === '') 
+                props = [ 'objectName', 'presentValue' ]
+            else 
+                props = [ 'presentValue' ]
 
-            request.push({ 
-                'cmd': 'read_property_db', 
-                'params': { 
-                    'id'        : device.id, 
-                    'net'       : device.net, 
-                    'object_id' : object.object_id,
-                    'object'    : object.object,                 
-                    'property'  : 'presentValue'
-                } 
-            })            
+            request = [...request, ...form_read_request(device, object, props)];
         });
 
         await bacnet_command(request)
     }
+    
 
-    async function read_object_properties(){
-        let request:any = []
+    async function read_object_properties(device: any, object: any, properties: any){
+        let request:any = []        
+        request = [...request, ...form_read_request(device, object, properties)]
         await bacnet_command(request)
     }
 
@@ -206,9 +248,15 @@
         if (selected_device.objects.length === 0)
             await read_object_list(selected_device)
         
-        view_objects_modal.open(120, 120) 
+        view_objects_modal.open(80, 80) 
         await update()
-    }    
+    }   
+    
+    async function show_properties_modal(){        
+        await read_object_properties(selected_device, selected_object, 'all')
+        view_properties_modal.open(160, 120) 
+        await update()
+    }       
 
     async function update(){
         data.data = await async_post( '/network_tools', 'bacnet_tools_update' )
@@ -226,18 +274,25 @@
             else if (el.segment_rx)                 { el.panel.push({ icon: ArrowDown,       color: "green", text: 'Segmentation RX'}) } 
             else                                    { el.panel.push({ icon: ArrowsVertical,  color: "grey",  text: 'No Segmentation'}) }
         
-
-            if ((selected_device !== undefined)&& (selected_device.net === el.net)) {
-                dev_data.data = el.objects
+            if ((selected_device !== undefined) && (selected_device.net === el.net)) {
+                dev_data.data = el.objects //Update Selected Device
                 selected_device = el
 
-                //console.log(dev_data)
+                if (selected_object !== undefined) {
+                    dev_data.data.forEach((obj: any) => {
+                        if (obj.object === selected_object.object){
+                            obj_data.data   = obj.properties
+                            selected_object = obj
+                        }
+                    }) 
+                }
             }           
-        })   
+        }) 
+        
     }
 
     onMount(async () => { 
-        buttons = update_buttons()
+        update_buttons()
         await update()
         interval_update = setInterval(async () => { await update() }, 2000)
     })
@@ -256,11 +311,11 @@
 <div class="content-panel"> <!--group="group" -->
     <DataTable bind:this={datatable} data={data}  context_btns={buttons} bind:selected_row={selected_device}  selectable_rows={true}
         onselect={(e: any) => {
-            buttons = update_buttons()         
+            update_buttons()         
         }}
         
-        ondblclick={(e: any) => {
-            show_objects_modal()
+        ondblclick={async (e: any) => {
+            await show_objects_modal()
         }}
     />
 </div>
@@ -269,17 +324,35 @@
 {#if (selected_device !== undefined)}
     <Modal bind:this={view_objects_modal} title="{selected_device.device_id} [{selected_device.net}]: {selected_device.name}" >
         <div class="modal_panel">
-            <ButtonR  icon={DataBackup}   text="Read All" color="normal" 
-                onclick={async (e: any) => { 
-                    await read_object_short_info_all(selected_device)
-                }}
-            />
+            <ControlPanel buttons={device_buttons} />
         </div>         
         
         <div id="fields">
             <DataTable data={dev_data} selectable_rows={true} bind:selected_row={selected_object} fill_height={false} 
                 onselect={async (e: any) => {
+                    update_buttons()  
                     await read_object_short_info(selected_device, selected_object)
+                }}
+
+                ondblclick={(e: any) => {
+                    show_properties_modal()
+                }}
+            />
+        </div>
+    </Modal>
+{/if}
+
+
+{#if (selected_object !== undefined)}
+    <Modal bind:this={view_properties_modal} title="{selected_object.object} - {selected_object.name}" >
+        <div class="modal_panel">
+            <ControlPanel buttons={object_buttons} />
+        </div>         
+        
+        <div id="fields">
+            <DataTable data={obj_data} selectable_rows={true} bind:selected_row={selected_property} fill_height={false} 
+                onselect={async (e: any) => {
+                    await read_object_properties(selected_device, selected_object, [ selected_property['property'] ])
                 }}
             />
         </div>

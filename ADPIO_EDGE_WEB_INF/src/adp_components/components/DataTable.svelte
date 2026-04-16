@@ -40,6 +40,7 @@
 <div class="datatable {fill_height? 'auto_height' : 'auto_height_auto'}"           
     oncontextmenu="{(e: any) => {
         if ( context_btns.length === 0 ) return
+        console.log(e)
         context.open_context(e.clientX, e.clientY)
         e.preventDefault()
     }}"

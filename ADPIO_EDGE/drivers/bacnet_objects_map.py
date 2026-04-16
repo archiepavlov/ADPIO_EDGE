@@ -1,4 +1,7 @@
 #Tool for objects and it's proprties mapping
+#Command 
+#cd ./ADPIO_EDGE/ADPIO_EDGE
+#python ./drivers/bacnet_objects_map.py
 
 import sys, inspect, importlib
 import os
@@ -82,12 +85,12 @@ def main():
     #{object-name: [prop list]}
     with open("objects_properties.ts", "w") as f:
         f.write('//Object properties list\n')
-        f.write('export const OBJECT_PROPERTIES = {\n')
+        f.write('export const OBJECT_PROPERTIES: any = {\n')
         for cls in jsn_output:
             f.write(f'  "{cls['id']}": [\n')
 
             for prop in cls["props"]:
-                f.write(f'      {prop}, \n')
+                f.write(f'      "{prop['id']}", \n')
 
             f.write(f'  ], \n\n')
 

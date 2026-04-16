@@ -11,11 +11,11 @@
     export let title: string = "No Title"
 
     let visible    :boolean = false
-    let drag_event :any     = {event: false, collapse: false, pos_x: 200, pos_y: 200, layer_x: 0, layer_y: 0}
+    let drag_event :any     = {event: false, collapse: false, pos_x: -999, pos_y: -999, layer_x: 0, layer_y: 0}
 
     export function open(posX: number, posY: number){
         if (visible) close(undefined)
-        if (!visible){
+        if (drag_event.pos_x === -999){
             drag_event.pos_x = posX
             drag_event.pos_y = posY
         }

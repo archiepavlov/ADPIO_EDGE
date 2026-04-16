@@ -119,8 +119,6 @@ class bacnet_server():
                         else:
                             if self.debug: print(f"New Task Rejected, Already exists")
                             
-                    
-
             await asyncio.sleep(self.task_mng_sleep) 
 
         self.bacnet_app.close()
@@ -288,15 +286,28 @@ class bacnet_server():
             print_log_bacnet(f"MSG Dismissed: mismatch object_id vs object {object["object"]} !== {params["object"]}")
             pass
 
-        value = await self.read_property(params)
-        
+        value = str( await self.read_property(params) )
+
+        property = find_property(object, params["property"])            
+        if property == None:
+            object['properties'].append({
+                #"property_id"  : len(object['properties']),
+                "property"     : params["property"],
+                "value"        : value, 
+            })
+        else:
+            property['value'] = value
+
+
         match params["property"]:
             case "objectName":
-                object["name" ] = str(value)
-                
+                object["name" ] = value
+
             case "presentValue":
-                object["value"] = str(value)
-            
+                object["value"] = value
+            case _: 
+                pass
+
 
         set_devices(devices)
 
@@ -349,5 +360,13 @@ def find_object(device, object):
     for obj in device['objects']:
         if obj['object'] == str(object):
             return object
+        
+    return None
+
+
+def find_property(object, property):
+    for obj in object['properties']:
+        if obj['property'] == property:
+            return property
         
     return None

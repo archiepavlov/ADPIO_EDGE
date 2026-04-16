@@ -26,7 +26,7 @@ def init_server_mem(lora_alloc = 100, bacnet_alloc = 250, terminal = False, auto
         terminal,       # Ouput into Terminal or into GUI
         " " * 1024 * lora_alloc,   # LoRaWAN Serialized Size may be too small (in 1024 x kb = bytes )
         " " * 1024 * bacnet_alloc, # BACnet DB  Serialized Size may be too small  (in 1024 x kb = bytes )
-        " " * 1024 * bacnet_alloc, # BACnet CMD Serialized Size may be too small  (in 1024 x kb = bytes )
+        " " * 512  * bacnet_alloc, # BACnet CMD Serialized Size may be too small  (in 1024 x kb = bytes / 2 )
     ], name=server_mem_name)
 
     SERVER_MEM[LORA_MEM_ADDR]       = "[]"
