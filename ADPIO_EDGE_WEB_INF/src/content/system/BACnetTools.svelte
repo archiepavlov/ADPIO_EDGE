@@ -34,7 +34,8 @@
         
         DataError,
         DataView,
-        DataBackup
+        DataBackup,
+        SearchLocateMirror,
     } from "carbon-icons-svelte"
     
 
@@ -108,7 +109,25 @@
                 disabled            : selected_device === undefined,
 
                 onclick             : async (e: any) => {  await read_object_list(selected_device) }
-            }
+            },
+
+            {
+                text                : 'Who Is? Lookup',
+                color               : 'green',
+                icon                : SearchLocateMirror ,
+                disabled            : false,
+
+                onclick             : async (e: any) => { await bacnet_command([{ 'cmd': 'who_is', 'params': {} }]) }
+            },
+
+            {
+                text                : 'Clear All Devices',
+                color               : 'red',
+                icon                : TrashCan,
+                disabled            : false,
+
+                onclick             : async (e: any) => { await bacnet_command([{ 'cmd': 'clear_db', 'params': {} }])  }
+            },
         ]
 
         device_buttons = [
@@ -122,12 +141,12 @@
             },
 
             {
-                text                : 'Read All Object Info',
+                text                : 'Full Read',
                 color               : 'normal',
                 icon                : DataBackup,
                 disabled            : selected_device === undefined,
 
-                onclick             : async (e: any) => {  await read_object_short_info_all(selected_device) }
+                onclick             : async (e: any) => {  await read_object_short_info(selected_device, selected_object, true) }
             }
         ]
 
@@ -138,7 +157,7 @@
                 icon                : DataBackup,
                 disabled            : false,
 
-                onclick             : async (e: any) => {  await read_object_properties(selected_device, selected_object, 'all') }
+                onclick             : async (e: any) => {  await read_object_properties(selected_device, selected_object, [ 'all' ]) }
             }
         ]
     }
@@ -153,7 +172,7 @@
                     'id'        : device.id,
                     'net'       : device.net, 
                     'object'    : `device, ${device.device_id}`, 
-                    'property'  : 'objectList', 
+                    'property'  : 'object-list', 
                 }
             })
         } else {
@@ -164,7 +183,7 @@
                         'id'        : device.id,
                         'net'       : device.net, 
                         'object'    : `device, ${device.device_id}`, 
-                        'property'  : 'objectList', 
+                        'property'  : 'object-list', 
                         'index'     : i 
                     }
                 })
@@ -174,68 +193,54 @@
         await bacnet_command(request)        
     }
 
-    function form_read_request(device: any, object: any, properties: any){
-        let request: any = []
-        let scan_all: boolean = false
 
-        //Do not forget check prop for segmentation if (device.segment_tx){
-        const object_map:string = OBJECT_PROPERTIES[object.object.split(',')[0]]        
-        if (properties === 'all') {
-            properties = object_map
-            scan_all   = true
-        }
+    async function read_object_short_info(device: any, object: any, read_all_obj: boolean = false){
+        let request:any   = []
+        const min_refresh = [ 'present-calue' ]
+        const max_refresh = [ 'object-name', 'present-value' ]
 
-        properties.forEach((prop: any) => {
-            if ((!scan_all) && (!object_map.includes(prop))) return 
-            
+        if (read_all_obj){
+            device.objects.forEach((object: any) => {
+                let properties: any = min_refresh
+                if (object.name === '') properties = max_refresh
+                request.push({ 
+                    'cmd': 'read_property_multi_db', 
+                    'params': { 
+                        'id'        : device.id, 
+                        'net'       : device.net,  
+                        'requests'  : [ object.object, properties ]          
+                    } 
+                }) 
+            })
+        } else {
+            let properties: any = min_refresh
+            if (object.name === '') properties = max_refresh
+
             request.push({ 
-                'cmd': 'read_property_db', 
+                'cmd': 'read_property_multi_db', 
                 'params': { 
                     'id'        : device.id, 
                     'net'       : device.net,  
-                    'object_id' : object.object_id,               
-                    'object'    : object.object,                 
-                    'property'  : prop,
+                    'requests'  : [ object.object, properties ]          
                 } 
-            })
-        });
-
-        return request
-    }
-
-    async function read_object_short_info(device: any, object: any){
-        let props  :any = []
+            })        
+        }      
         
-        if (object.name === '') 
-            props = [ 'objectName', 'presentValue']
-        else 
-            props = [ 'presentValue']
 
-        let request:any = form_read_request(device, object, props)
         await bacnet_command(request)
     }
 
-    async function read_object_short_info_all(device: any){
-        let request:any = []
-        let props  :any = []
-        
-
-        device.objects.forEach((object: any) => {
-            if (object.name === '') 
-                props = [ 'objectName', 'presentValue' ]
-            else 
-                props = [ 'presentValue' ]
-
-            request = [...request, ...form_read_request(device, object, props)];
-        });
-
-        await bacnet_command(request)
-    }
-    
 
     async function read_object_properties(device: any, object: any, properties: any){
-        let request:any = []        
-        request = [...request, ...form_read_request(device, object, properties)]
+        let request:any   = []
+        request.push({ 
+            'cmd': 'read_property_multi_db', 
+            'params': { 
+                'id'        : device.id, 
+                'net'       : device.net,  
+                'requests'  : [ object.object, properties ]          
+            } 
+        }) 
         await bacnet_command(request)
     }
 
@@ -253,7 +258,7 @@
     }   
     
     async function show_properties_modal(){        
-        await read_object_properties(selected_device, selected_object, 'all')
+        await read_object_properties(selected_device, selected_object, [ 'all' ])
         view_properties_modal.open(160, 120) 
         await update()
     }       

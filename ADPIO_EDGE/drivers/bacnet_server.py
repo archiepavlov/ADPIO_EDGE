@@ -34,13 +34,13 @@ class bacnet_server():
         self.settings        = []
 
         self.CMDS_DICT = {
-            'who_is'            : self.who_is,              #low_limit = 0, high_limit = 4194303
-            #'read_object_list'  : self.read_object_list, 
-            #'read_device_info'  : self.read_device_info, 
-            'read_property'     : self.read_property,   
-            'read_device_list'  : self.read_device_list, #Register in db
-            'read_property_db'  : self.read_property_db, #Register in db
-            'write_property'    : self.write_property, 
+            'who_is'                 : self.who_is,              #low_limit = 0, high_limit = 4194303
+            'clear_db'               : self.clear_db,             
+            'read_property'          : self.read_property,   
+            'read_property_multi'    : self.read_property_multi, 
+            'read_device_list'       : self.read_device_list,       #Register in db
+            'read_property_multi_db' : self.read_property_multi_db, #Register in db
+            'write_property'         : self.write_property, 
         }       
 
 
@@ -130,6 +130,11 @@ class bacnet_server():
         self.tasks  = []
 
 
+    async def clear_db(self, params):
+        self.tasks  = []
+        set_devices  ([])
+        
+
     async def add_task(self, cmd, params):
         self.tasks.append({'cmd': cmd, 'params': params})
 
@@ -170,7 +175,7 @@ class bacnet_server():
 
             
             #Get Device Info
-            try:    name = await self.read_property({'net': net, 'object': f'device, {device_instance}', 'property': 'objectName'})
+            try:    name = await self.read_property({'net': net, 'object': f'device, {device_instance}', 'property': 'object-name'})
             except: print(f"Failed to get device {device_address} name")
 
             try:    description = await self.read_property({'net': net, 'object': f'device, {device_instance}', 'property': 'description'})
@@ -180,7 +185,7 @@ class bacnet_server():
             except: print(f"Failed to get device {device_address} location")
 
             try:    
-                segment = await self.read_property({'net': net, 'object': f'device, {device_instance}', 'property': 'segmentationSupported'})
+                segment = await self.read_property({'net': net, 'object': f'device, {device_instance}', 'property': 'segmentation-supported'})
                 match segment:
                     case 0:
                         segment_rx  = True
@@ -197,7 +202,7 @@ class bacnet_server():
 
             except: print(f"Failed to get device {device_address} segmentation")            
 
-            try:    list_size = await self.read_property({'net': net, 'object': f'device, {device_instance}', 'property': 'objectList', 'index': 0})
+            try:    list_size = await self.read_property({'net': net, 'object': f'device, {device_instance}', 'property': 'object-list', 'index': 0})
             except: print(f"Failed to get device {device_address} list_size")                        
 
             if device == None:
@@ -239,7 +244,38 @@ class bacnet_server():
         return value
 
 
+
+    async def read_property_multi(self, params): #Register object/property in database
+        #'cmd': 'read_property_multi_db', 
+        #'params': { 
+        #    'id'        : device.id, 
+        #    'net'       : device.net,  
+        #    'requests'  : [
+        #    'analog-input, 1', ['presentValue', 'objectName'],
+        #    'analog-input, 2', ['presentValue']
+        #    ]          
+        #}         
+   
+        values = await self.bacnet_app.read_property_multiple(params["net"], params["requests"])
+
+        if __debug__:
+            for obj in values:
+                print(f'multi req obj/prp: {obj[0]} / {obj[1]} [{obj[2]}] = {obj[3]}')
+        
+        return values
+
+
+
     async def read_device_list(self, params): #Register object/property in database
+        #'cmd': 'read_device_list', 
+        #'params': {
+        #    'id'        : 0,  -device index
+        #    'net'       : device.net, - net
+        #    'object'    : `device, 1`, - object
+        #    'property'  : 'prop',  - prop
+        #    'index'     : i  - optional index
+        #}
+
         devices = get_devices()        
         device  = devices[params['id']]
 
@@ -249,12 +285,10 @@ class bacnet_server():
 
         obj_list = await self.read_property(params) #ObjectIdentifier Type
 
-
         if not isinstance(obj_list, list): #Fix for no segmentation calls
             obj_list = [obj_list]
 
-
-        if params['property'] == 'objectList': #Check for new objects
+        if params['property'] == 'object-list': #Check for new objects
             for obj in obj_list:         
                 object = find_object(device, obj)
 
@@ -267,47 +301,39 @@ class bacnet_server():
                         "properties" : [], #name, datatype, value
                     })
 
-                    if self.debug:
-                        print(f"{device["net"]}: New object {len(device['objects'])}: {obj}")
+                    if self.debug: print(f"{device["net"]}: New object {len(device['objects'])}: {obj}")
 
             set_devices(devices)
 
 
-    async def read_property_db(self, params): #Register object/property in database
+
+    async def read_property_multi_db(self, params): #Register object/property in database
         devices = get_devices()  
-        
+
         device  = devices[params['id']]
         if device["net"] != params["net"]:
             print_log_bacnet(f"MSG Dismissed: mismatch id vs device net {device["net"]} !== {params["net"]}")
             pass
 
-        object = device['objects'][params['object_id']]
-        if object["object"] != params["object"]:
-            print_log_bacnet(f"MSG Dismissed: mismatch object_id vs object {object["object"]} !== {params["object"]}")
-            pass
+        respond = await self.read_property_multi(params)
+    
+        for resp in respond:
+            #0 - object, 1 - prop, 2 - idk, 3 - value  
+            object   = find_object  (device, resp[0])
+            property = find_property(object, resp[1])            
+            value = str(resp[3])
 
-        value = str( await self.read_property(params) )
+            if property == None:
+                object['properties'].append({
+                    "property"     : str(resp[1]),
+                    "value"        : value, 
+                })
+            else:
+                property['value'] = value
 
-        property = find_property(object, params["property"])            
-        if property == None:
-            object['properties'].append({
-                #"property_id"  : len(object['properties']),
-                "property"     : params["property"],
-                "value"        : value, 
-            })
-        else:
-            property['value'] = value
-
-
-        match params["property"]:
-            case "objectName":
-                object["name" ] = value
-
-            case "presentValue":
-                object["value"] = value
-            case _: 
-                pass
-
+            match str(resp[1]):
+                case "object-name":   object["name" ] = value
+                case "present-value": object["value"] = value                
 
         set_devices(devices)
 
@@ -357,16 +383,18 @@ def find_device(devices, device_net):
 
 
 def find_object(device, object):
+    searched = str(object)
     for obj in device['objects']:
-        if obj['object'] == str(object):
-            return object
+        if obj['object'] == searched:
+            return obj
         
     return None
 
 
 def find_property(object, property):
-    for obj in object['properties']:
-        if obj['property'] == property:
-            return property
+    searched = str(property)
+    for prp in object['properties']:
+        if prp['property'] == searched:
+            return prp
         
     return None
