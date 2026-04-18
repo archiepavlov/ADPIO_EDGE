@@ -33,13 +33,16 @@ class bacnet_server():
         self.bacnet_app      = None
         self.settings        = []
 
+        self.who_is_onstart  = False
+
         self.CMDS_DICT = {
-            'who_is'                 : self.who_is,              #low_limit = 0, high_limit = 4194303
+            'who_is'                 : self.who_is,                 #low_limit = 0, high_limit = 4194303
             'clear_db'               : self.clear_db,             
             'read_property'          : self.read_property,   
             'read_property_multi'    : self.read_property_multi, 
             'read_device_list'       : self.read_device_list,       #Register in db
             'read_property_multi_db' : self.read_property_multi_db, #Register in db
+            
             'write_property'         : self.write_property, 
         }       
 
@@ -48,6 +51,7 @@ class bacnet_server():
         #Set general settings
         self.task_mng_sleep = settings_adapter['task_mng_sleep']
         self.debug          = settings_adapter['debug']
+        self.who_is_onstart = settings_adapter['debug']
 
         #Set adapter's settings
         settings_adapter['server'][0][1]["bacnet-ip-udp-port"] = settings_adapter['bip_port']
@@ -84,9 +88,7 @@ class bacnet_server():
 
         self.status = True
         
-        #if settings_service["whois_autostart"]: self.add_task({"cmd": "who_is"})
-        await self.add_task('who_is', {})
-        #await self.add_task('read_property', {'net': '192.168.1.106', 'object': 'analog-input, 1', 'property': 'presentValue'})
+        if self.who_is_onstart: await self.add_task('who_is', {})
 
         while self.status:  #BACnet task manager Loop
             try: 
@@ -339,7 +341,25 @@ class bacnet_server():
 
 
     async def write_property(self, params):
-        pass
+        # device_address,  object_identifier,  property_identifier,
+        # value, property_array_index,  priority,
+
+        device_net  = Address           (params["net"])
+        object      = ObjectIdentifier  (params["object"])
+        property    = PropertyIdentifier(params["property"])
+        value       = params["value"]
+        priority    = params["priority"]
+        
+        array_index = None
+        if 'index' in params:
+            array_index = params["index"]
+        
+        await self.bacnet_app.write_property(device_net, object, property, value, array_index=array_index, priority=priority )   
+        
+        if self.debug:
+            print(f"Property Write: {device_net}: {object}, {property} = new value {value}")
+
+        return {"result": "OK"}
 
 
     async def cmd_error(self, params):

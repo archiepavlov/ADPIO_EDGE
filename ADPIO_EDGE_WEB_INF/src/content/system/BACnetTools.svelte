@@ -5,13 +5,15 @@
         async_post,
     } from "../../stores"
 
-    import { OBJECT_PROPERTIES } from "../../../public/objects_properties"
+    import { PRIORITY_ARRAY_LIST } from "../../../public/objects_properties"
 
     import DataTable        from "../../adp_components/components/DataTable.svelte"
     import Modal            from "../../adp_components/components/Modal.svelte"
     import ControlPanel     from "../../adp_components/components/ControlPanel.svelte"
     import ButtonR          from '../../adp_components/components/ButtonR.svelte'
-    
+    import InputSelector    from '../../adp_components/components/InputSelector.svelte'
+    import InputLabel       from '../../adp_components/components/InputLabel.svelte'
+
     import {
         Edit,
         FolderParent,
@@ -38,14 +40,20 @@
         SearchLocateMirror,
     } from "carbon-icons-svelte"
     
+    
+    
 
     let datatable           : any = undefined
+
     let selected_device     : any = undefined
     let selected_object     : any = undefined
     let selected_property   : any = undefined
     
     let view_objects_modal    : any = undefined
     let view_properties_modal : any = undefined
+
+    let write_property_modal  : any = undefined
+    let writable_value        : any = { priority: 8, value: 'none' }
     
     let interval_update: number
 
@@ -193,10 +201,9 @@
         await bacnet_command(request)        
     }
 
-
     async function read_object_short_info(device: any, object: any, read_all_obj: boolean = false){
         let request:any   = []
-        const min_refresh = [ 'present-calue' ]
+        const min_refresh = [ 'present-value' ]
         const max_refresh = [ 'object-name', 'present-value' ]
 
         if (read_all_obj){
@@ -226,10 +233,8 @@
             })        
         }      
         
-
         await bacnet_command(request)
     }
-
 
     async function read_object_properties(device: any, object: any, properties: any){
         let request:any   = []
@@ -242,6 +247,28 @@
             } 
         }) 
         await bacnet_command(request)
+    }
+
+    async function write_property(device: any, object: any, property: any, write_struct: any){
+        let request:any   = []
+        request.push({ 
+            'cmd': 'write_property', 
+            'params': { 
+                'id'        : device.id, 
+                'net'       : device.net,  
+                'object'    : object.object,
+                'property'  : property.property,
+                'value'     : write_struct.value,
+                'priority'  : write_struct.priority
+            } 
+        }) 
+
+        await bacnet_command(request)
+
+        //Temp solution, reread result
+        write_property_modal.close()
+
+        await read_object_properties(device, object, [ property.property ])
     }
 
     async function bacnet_command(cmd: any){
@@ -259,9 +286,15 @@
     
     async function show_properties_modal(){        
         await read_object_properties(selected_device, selected_object, [ 'all' ])
-        view_properties_modal.open(160, 120) 
+        view_properties_modal.open(120, 120) 
         await update()
-    }       
+    }
+
+    async function show_write_property_dialog() {
+        writable_value.value = selected_property.value
+        write_property_modal.open(160, 160) 
+    }
+    
 
     async function update(){
         data.data = await async_post( '/network_tools', 'bacnet_tools_update' )
@@ -359,10 +392,36 @@
                 onselect={async (e: any) => {
                     await read_object_properties(selected_device, selected_object, [ selected_property['property'] ])
                 }}
+
+                ondblclick={async (e: any) => {
+                    await show_write_property_dialog()
+                }}
             />
         </div>
     </Modal>
 {/if}
+
+
+{#if (selected_property !== undefined)}
+    <Modal bind:this={write_property_modal} title="{selected_object.object} - {selected_object.name}, {selected_property.property}" >
+        <div class="w_fields">
+            <InputSelector label="Priority Array"  bind:value={ writable_value.priority } item_list={ PRIORITY_ARRAY_LIST } 
+                onchange={()=>{  }}
+            />
+        </div>
+
+        <div class="w_fields">
+            <InputLabel label="Value"  bind:value={ writable_value.value } minlength={0} maxlength={256} 
+                oninput={()=>{  }}  
+            />
+        </div>
+
+        <ButtonR text="Write Value" icon={Edit} color="green" onclick={async (e:any, ) =>  {
+            await write_property(selected_device, selected_object, selected_property, writable_value)
+        }} />          
+    </Modal>
+{/if}
+
 
 
 <style>
@@ -377,5 +436,9 @@
         padding: 5px;
     }
 
+    .w_fields{
+        padding: 12px 12px;
+    }
+    
 </style>
 

@@ -1,3 +1,27 @@
+//Priority array
+export const PRIORITY_ARRAY_LIST: any = [
+    { value: 1 ,           name: "1 - Manual LifeSafety"        },
+    { value: 2 ,           name: "2 - Automatic LifeSafety"        },
+    { value: 3 ,           name: "3"        },
+    { value: 4 ,           name: "4"        },
+
+    { value: 5 ,           name: "5 - Critical EquipmentControls"        },
+    { value: 6 ,           name: "6 - Minimum OnOff"        },
+    { value: 7 ,           name: "7"        },
+    { value: 8 ,           name: "8 - Manual Operator"        },
+
+    { value: 9 ,           name: "9"         },
+    { value: 10 ,          name: "10"        },
+    { value: 11 ,          name: "11"        },
+    { value: 12 ,          name: "12"        },
+
+    { value: 13 ,          name: "13"        },
+    { value: 14 ,          name: "14"        },
+    { value: 15 ,          name: "15"        },
+    { value: 16 ,          name: "16"        },
+]
+
+
 //Object properties list
 export const OBJECT_PROPERTIES: any = {
   "access-credential": [

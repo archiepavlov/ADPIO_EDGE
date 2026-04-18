@@ -10,7 +10,7 @@
     },
 
     "lorawan_server": {
-        "net_autostart": true,
+        "net_autostart": false,
         "port"         : 9002,
         "alloc_size"   : 100,
         "debug"        : false,
