@@ -24,19 +24,19 @@ def user_rec(db):
     }    
     return type(table.capitalize(),(db.Entity,),fields)
     
-def logger_rec(db):
-    table = 'logger_model'
-
-    fields = {
-		'_table_': table,
-
-		#'id': 	PrimaryKey(int, auto = True),
-        'date':             PrimaryKey(datetime,    default = datetime.now), #precision=0
-		'type':             Optional  (str, 12 ,    default = ''),       
-
-        'text':             Optional  (str, 4096,   default = 'notext'),
-    }
-    return type(table.capitalize(),(db.Entity,),fields)
+#def logger_rec(db):
+#    table = 'logger_model'
+#
+#    fields = {
+#		'_table_': table,
+#
+#		#'id': 	PrimaryKey(int, auto = True),
+#        'date':             PrimaryKey(datetime,    default = datetime.now), #precision=0
+#		'type':             Optional  (str, 12 ,    default = ''),       
+#
+#        'text':             Optional  (str, 4096,   default = 'notext'),
+#    }
+#    return type(table.capitalize(),(db.Entity,),fields)
 
 
 

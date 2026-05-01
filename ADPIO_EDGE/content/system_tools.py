@@ -1,16 +1,21 @@
-from pony.orm import *
 import ujson
 import os
+
 from shutil import rmtree, copytree, copyfile
 from glob import glob
-
 
 #settings
 from system.globals     import WORKSPACE, ROOT_FOLDER
 
-#DB
-from database.db_main   import db
 
+
+### TO BE DEPRICIATED ###
+from database.db_main   import db
+from pony.orm import *
+
+
+
+from database_sql.workspace_model import workspace_db, logs_rec
 from content.users      import check_permissions
 
 

@@ -1,8 +1,10 @@
-from pony.orm               import *
+import ujson
 from secrets                import compare_digest
 from base64                 import b64encode
-import ujson
 
+
+### TO BE DEPRICIATED ###
+from pony.orm               import *
 from database.db_main       import db
 
 

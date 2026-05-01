@@ -3,7 +3,7 @@ from pony.orm import *
 from system.globals import WORKSPACE
 
 from database.model_app     import app_rec
-from database.model_system  import logger_rec, user_rec, graph_palette_rec, logic_palette_rec
+from database.model_system  import user_rec, graph_palette_rec, logic_palette_rec
 
 
 class __db_serv:
@@ -13,7 +13,7 @@ class __db_serv:
         self.apps                = None
 
         self.users               = None
-        self.logger              = None
+        #self.logger              = None
 
         self.grpah_palette       = None
         self.logic_palette       = None
@@ -27,7 +27,7 @@ class __db_serv:
         self.apps                = app_rec(self.dbase)
 
         self.users               = user_rec   (self.dbase)
-        self.logger              = logger_rec (self.dbase)
+        #self.logger              = logger_rec (self.dbase)
 
         self.grpah_palette       = graph_palette_rec(self.dbase)
         self.logic_palette       = logic_palette_rec(self.dbase)

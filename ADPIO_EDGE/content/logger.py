@@ -1,32 +1,24 @@
-from pony.orm import *
 import ujson
- 
-#DB
-from database.db_main import db
 
+from database_sql.workspace_model import workspace_db, logs_rec
 from content.users import check_permissions
 
 
-def to_json(rec):
-    return {
-        "date": str(rec.date).split('.')[0], 
-        "type": rec.type,                    
-        "text": rec.text,                    
-    }
-
-
 async def update(content):
-    with db_session: 
-        return [ to_json(rec) for rec in db.logger.select().order_by(desc(db.logger.date)).limit(128) ]
-        
-    return []
+    try:
+        return await workspace_db.load_all_records(logs_rec, to_json=True)
+    except  Exception as ex:
+        print(str(ex))
+        return  {"result": "error", "error_text": f"Failed update logs... ({ex})"}
 
 
 async def clear_all(content):
-    with db_session: 
-        db.logger.select().delete(bulk = True)
-        
-    return { "result": "ok", } 
+    try:
+        await workspace_db.delete_all_records(logs_rec)
+        return { "result": "ok", } 
+    except  Exception as ex:
+        print(str(ex))
+        return  {"result": "error", "error_text": f"Failed to delete all logs... ({ex})"}    
 
 
 async def print_log_system(txt):
@@ -42,8 +34,7 @@ async def print_log_system(txt):
     if (len(txt) > 2018):
         txt_trim = txt[:2018] + '...'
 
-    with db_session:
-        db.logger (type='system', text=txt_trim)
+    await workspace_db.add_record( logs_rec (type='system', text=txt_trim) )
     
     print( f'System: {txt}' )
     return {'system' : txt}
@@ -54,8 +45,7 @@ async def print_log_error(txt):
     if (len(txt) > 2018):
         txt_trim = txt[:2018] + '...'
 
-    with db_session:
-        db.logger (type='error', text=txt_trim)
+    await workspace_db.add_record( logs_rec (type='error', text=txt_trim) )
     
     print( f'Error: {txt}' )
     return {'error' : txt}
@@ -66,8 +56,7 @@ async def print_log_lora(txt):
     if (len(txt) > 2018):
         txt_trim = txt[:2018] + '...'
 
-    with db_session:
-        db.logger (type='LoRaWAN', text=txt_trim)
+    await workspace_db.add_record( logs_rec (type='LoRaWAN', text=txt_trim) )
     
     print( f'LoRaWAN: {txt}' )
     return {'LoRaWAN' : txt}
@@ -78,8 +67,7 @@ async def print_log_bacnet(txt):
     if (len(txt) > 2018):
         txt_trim = txt[:2018] + '...'
 
-    with db_session:
-        db.logger (type='BACnet', text=txt_trim)
+    await workspace_db.add_record( logs_rec (type='BACnet', text=txt_trim) )
     
     print( f'BACnet: {txt}' )
     return {'BACnet' : txt}
@@ -90,8 +78,7 @@ async def print_app_event(txt):
     if (len(txt) > 2018):
         txt_trim = txt[:2018] + '...'
 
-    with db_session:
-        db.logger (type='APPS', text=txt_trim)
+    await workspace_db.add_record( logs_rec (type='APPS', text=txt_trim) )
     
     print( f'APPS: {txt}' )
     return {'APPS' : txt}
@@ -114,7 +101,6 @@ async def show_logs(content):
     except FileNotFoundError:
         return { 'content': content }
         
-
     return { 'content': content }
             
 

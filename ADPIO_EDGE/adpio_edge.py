@@ -5,7 +5,12 @@ sys.path.append(f'{os.getcwd()}/ext_lib/') #External Libraries
 import uvicorn
 import asyncio
 from pydantic import BaseModel
+
+
+### TO BE DEPRICIATED ###
 from pony.orm import *
+### TO BE DEPRICIATED ###
+from sqlmodel import Field, Session, SQLModel, create_engine
 
 
 #FAST API
@@ -24,8 +29,14 @@ from fastapi.middleware.gzip import GZipMiddleware
 #SYSTEM
 from system.globals         import ROOT_FOLDER, WORKSPACE, WEB_INF_index
 from system.settings_server import settings_cfg
+
+### TO BE DEPRICIATED ###
 from database.db_main       import db
 from database.app_db        import apps_db_initialize, apps_db_termiante
+### TO BE DEPRICIATED ###
+
+from database_sql.workspace_model import workspace_db
+
 from system.shared_mem      import init_server_mem, clear_server_mem, get_server_mem, STATUS_MEM_ADDR, WORKERS_MEM_ADDR, DB_REBUILD_MEM_ADDR, TERMINAL_MEM_ADDR
 from assets.terminal        import terminal_web
 
@@ -111,7 +122,12 @@ async def startup_shutdown(app: FastAPI):
     INDEX = WEB_INF_index() #Relink Files in webinf in index.html
 
     #Init Databases
+    workspace_db.initialize()
+
+### TO BE DEPRICIATED ###
     db.init_db()
+
+    
 
     server_mem                   = get_server_mem()
     server_mem[WORKERS_MEM_ADDR] += 1 #Workers Count
@@ -136,7 +152,7 @@ async def startup_shutdown(app: FastAPI):
             print()
     
     if worker == 1:
-        await print_log_system("ADPIO Edge Started!\n")
+        await print_log_system(f"ADPIO Edge Started! Debug Mode: {__debug__}\n")
     
     yield   #Before This - Startup, After - Shutdown
 
@@ -155,6 +171,9 @@ async def startup_shutdown(app: FastAPI):
     if not server_mem[TERMINAL_MEM_ADDR]:
         terminal.terminate()
 
+    workspace_db.terminate()
+
+### TO BE DEPRICIATED ###
     db.close_db()
 
 
@@ -311,8 +330,12 @@ def main():
         log_lvl     = "info"   
         print("DEBUG ON !!!")
 
+#Init Workspace DB
+    workspace_db.initialize()
 
+### TO BE DEPRICIATED ###
     db.init_db()    
+
     init_server_mem(
         terminal     = settings.terminal,
         auto_rebuild = settings.auto_rebuild,
@@ -344,6 +367,10 @@ def main():
     if not settings.terminal:
         terminal.terminate()
 
+
+    workspace_db.terminate()
+
+### TO BE DEPRICIATED ###
     db.close_db()
 
 
